@@ -12,6 +12,7 @@ The goal is to transform raw data into a structured analytics framework using SQ
 
 ## 📁 Project Structure
 
+```
 blinkit-sql-analysis/
 │
 ├── data/                # Raw datasets (CSV or SQL files)
@@ -19,6 +20,8 @@ blinkit-sql-analysis/
 ├── visuals/             # Dashboard images, charts, and PPT screenshots
 ├── README.md            # Project documentation
 └── requirements.txt     # Optional dependencies or setup notes
+```
+
 
 
 ---
