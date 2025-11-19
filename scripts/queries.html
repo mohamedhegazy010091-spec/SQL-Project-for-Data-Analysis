@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blinkit Analysis Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: #0056b3;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 25px;
+        }
+        h2 {
+            font-size: 1.5em;
+        }
+        h3 {
+            font-size: 1.2em;
+        }
+        pre {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.9em;
+            color: #000;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: block;
+        }
+        .section-header {
+            margin-bottom: 15px;
+        }
+        .explanation {
+            border-left: 5px solid #007bff;
+            padding: 10px 15px;
+            margin-top: 10px;
+            background-color: #eaf6ff;
+            border-radius: 4px;
+        }
+        .result-img-container {
+            margin-bottom: 20px;
+        }
+        hr {
+            border: 0;
+            height: 1px;
+            background: #ccc;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🛒 Blinkit Analysis</h1>
+
+    <div class="section-header">
+        <h2>Data Import</h2>
+        <p>See all the data imported:</p>
+        <pre><code>SELECT * FROM blinkit_data</code></pre>
+    </div>
+
+    <hr>
+
+    <div class="section-header">
+        <h2>🧹 DATA CLEANING</h2>
+        [cite_start]<p>Cleaning the **Item_Fat_Content** field ensures data consistency and accuracy in analysis[cite: 5]. [cite_start]The presence of multiple variations of the same category (e.g., **LF**, **low fat** vs. **Low Fat**) can cause issues in reporting, aggregations, and filtering[cite: 6]. [cite_start]By standardizing these values, we improve **data quality**, making it easier to generate insights and maintain uniformity in our datasets[cite: 7].</p>
+
+        <h3>SQL Query for Standardization:</h3>
+        <pre><code>UPDATE blinkit_data
+SET Item_Fat_Content =
+CASE
+WHEN Item_Fat_Content IN ('LF', 'low fat') THEN 'Low Fat'
+WHEN Item_Fat_Content = 'reg' THEN 'Regular'
+ELSE Item_Fat_Content
+END;</code></pre>
+
+        <p>After executing this query, check the data has been cleaned or not using the below query:</p>
+        <pre><code>SELECT DISTINCT Item_Fat_Content FROM blinkit_data;</code></pre>
+        <div class="result-img-container">
+                    </div>
+    </div>
+
+    <hr>
+
+    <div class="section-header">
+        <h2>📊 A. KPI’s (Key Performance Indicators)</h2>
+
+        <h3>1. TOTAL SALES:</h3>
+        <pre><code>SELECT CAST(SUM(Total_Sales) / 1000000.0 AS DECIMAL(10,2)) AS Total_Sales_Million
+FROM blinkit_data;</code></pre>
+        <div class="result-img-container">
+                    </div>
+
+        <h3>2. AVERAGE SALES:</h3>
+        <pre><code>SELECT CAST(AVG(Total_Sales) AS INT) AS Avg_Sales
+FROM blinkit_data;</code></pre>
+        <div class="result-img-container">
+                    </div>
+
+        <h3>3. NO OF ITEMS:</h3>
+        <pre><code>SELECT COUNT(*) AS No_of_Orders
+FROM blinkit_data;</code></pre>
+        <div class="result-img-container">
+                    </div>
+
+        <h3>4. AVG RATING:</h3>
+        <pre><code>SELECT CAST(AVG(Rating) AS DECIMAL(10,1)) AS Avg_Rating
+FROM blinkit_data;</code></pre>
+        <div class="result-img-container">
+                    </div>
+    </div>
+
+    <hr>
+
+    <div class="section-header">
+        <h2>📈 B. Total Sales by Fat Content:</h2>
+        <pre><code>SELECT Item_Fat_Content, CAST(SUM(Total_Sales) AS DECIMAL(10,2)) AS Total_Sales
+FROM blinkit_data
+GROUP BY Item_Fat_Content</code></pre>
+        <div class="result-img-container">
+                    </div>
+    </div>
+
+    <hr>
+
+    <div class="section-header">
+        <h2>📦 C. Total Sales by Item Type</h2>
+        <pre><code>SELECT Item_Type, CAST(SUM(Total_Sales) AS DECIMAL(10,2)) AS Total_Sales
+FROM blinkit_data
+GROUP BY Item_Type
+ORDER BY Total_Sales DESC</code></pre>
+        <div class="result-img-container">
+                    </div>
+    </div>
+
+    <hr>
+
+    <div class="section-header">
+        <h2>📍 D. Fat Content by Outlet for Total Sales</h2>
+        <pre><code>SELECT Outlet_Location_Type,
+ISNULL([Low Fat], 0) AS Low_Fat,
+ISNULL([Regular], 0) AS Regular
+FROM
+(
+SELECT Outlet_Location_Type, Item_Fat_Content,
+CAST(SUM(Total_Sales) AS DECIMAL(10,2)) AS Total_Sales
+FROM blinkit_data
+GROUP BY Outlet_Location_Type, Item_Fat_Content
+) AS SourceTable
+PIVOT
+(
+SUM(Total_Sales)
+FOR Item_Fat_Content IN ([Low Fat], [Regular])
+) AS PivotTable
+ORDER BY Outlet_Location_Type;</code></pre>
+        <div class="result-img-container">
+                    </div>
+
+        <div class="explanation">
+            [cite_start]<h3>Query Explanations[cite: 56]:</h3>
+            [cite_start]<p>This query aims to transform the **blinkit_data** table to display total sales (**Total_Sales**) for each combination of **Outlet_Location_Type** and **Item_Fat_Content**[cite: 57]. [cite_start]The result shows **Outlet_Location_Type** as rows and **Item_Fat_Content** categories ("Low Fat" and "Regular") as columns[cite: 58]. [cite_start]If there are no sales for a particular combination, the query displays **0** instead of **NULL**[cite: 59].</p>
+            <ul>
+                [cite_start]<li>**Subquery Aggregation:** Groups the data by **Outlet_Location_Type** and **Item_Fat_Content**, calculating the total sales for each combination[cite: 74]. [cite_start]The **CAST(SUM(Total_Sales) AS DECIMAL(10,2))** sums the sales and formats the result to two decimal places[cite: 75].</li>
+                [cite_start]<li>**PIVOT Operation:** Transforms the rows of **Item_Fat_Content** into columns (**[Low Fat]** and **[Regular]**)[cite: 85]. [cite_start]**SUM(Total_Sales)** aggregates the sales for each **Item_Fat_Content** category within each **Outlet_Location_Type**[cite: 86].</li>
+                [cite_start]<li>**ISNULL Function:** Replaces any **NULL** values generated by the PIVOT operation (where a combination didn't exist) with **0** for both the **[Low Fat]** and **[Regular]** columns[cite: 99, 100, 103].</li>
+            </ul>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="section-header">
+        <h2>📅 E. Total Sales by Outlet Establishment</h2>
+        <pre><code>SELECT Outlet_Establishment_Year, CAST(SUM(Total_Sales) AS DECIMAL(10,2)) AS Total_Sales
+FROM blinkit_data
+GROUP BY Outlet_Establishment_Year
+ORDER BY Outlet_Establishment_Year</code></pre>
+        <div class="result-img-container">
+                    </div>
+    </div>
+
+    <hr>
+
+    <div class="section-header">
+        <h2>⚖️ F. Percentage of Sales by Outlet Size</h2>
+        <pre><code>SELECT
+Outlet_Size,
+CAST(SUM(Total_Sales) AS DECIMAL(10,2)) AS Total_Sales,
+CAST((SUM(Total_Sales) * 100.0 / SUM(SUM(Total_Sales)) OVER()) AS DECIMAL(10,2)) AS Sales_Percentage
+FROM blinkit_data
+GROUP BY Outlet_Size
+ORDER BY Total_Sales DESC;</code></pre>
+        <div class="result-img-container">
+                    </div>
+        <div class="explanation">
+            <h3>Query Explanation:</h3>
+            <ul>
+                [cite_start]<li>**Outlet_Size**: Represents the size category of the outlet (e.g., Small, Medium, Large)[cite: 119].</li>
+                [cite_start]<li>**Total_Sales**: Calculates the total sales for each **Outlet_Size** and formats it to two decimal places[cite: 121, 122].</li>
+                [cite_start]<li>**Sales_Percentage**: Calculates the percentage contribution of each outlet size to the overall sales[cite: 128].
+                    <ul>
+                        [cite_start]<li>**SUM(Total_Sales)**: Total sales for the current group (Outlet\_Size)[cite: 126].</li>
+                        [cite_start]<li>**SUM(SUM(Total_Sales)) OVER()**: The inner `SUM(Total_Sales)` calculates the total sales for each size, and the outer `SUM(...) OVER()` calculates the **grand total** of all sales across all outlet sizes[cite: 125, 127].</li>
+                        [cite_start]<li>The calculation divides the total sales of the current size by the grand total and multiplies by 100[cite: 128].</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="section-header">
+        <h2>🗺️ G. Sales by Outlet Location</h2>
+        <pre><code>SELECT Outlet_Location_Type, CAST(SUM(Total_Sales) AS DECIMAL(10,2)) AS Total_Sales
+FROM blinkit_data
+GROUP BY Outlet_Location_Type
+ORDER BY Total_Sales DESC</code></pre>
+        <div class="result-img-container">
+                    </div>
+    </div>
+
+    <hr>
+
+    <div class="section-header">
+        <h2>🏪 H. All Metrics by Outlet Type:</h2>
+        <pre><code>SELECT Outlet_Type,
+CAST(SUM(Total_Sales) AS DECIMAL(10,2)) AS Total_Sales,
+CAST(AVG(Total_Sales) AS DECIMAL(10,0)) AS Avg_Sales,
+COUNT(*) AS No_Of_Items,
+CAST(AVG(Rating) AS DECIMAL(10,2)) AS Avg_Rating,
+CAST(AVG(Item_Visibility) AS DECIMAL(10,2)) AS Item_Visibility
+FROM blinkit_data
+GROUP BY Outlet_Type
+ORDER BY Total_Sales DESC</code></pre>
+        <div class="result-img-container">
+                    </div>
+    </div>
+</div>
+
+</body>
+</html>
